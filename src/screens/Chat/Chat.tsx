@@ -5,117 +5,83 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import React, { useState, useRef, useEffect } from 'react';
-import AppText from '../../components/atoms/AppText/AppText';
-import { AppColors, AppFontFamily } from '../../themes';
-import ThemeInput from '../../components/atoms/ThemeInput/ThemeInput';
-import { CircleArrowUp, NotebookPen } from 'lucide-react-native';
-import axios from 'axios';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  addMessage,
-  startNewChat,
-  setCurrentSession,
-} from '../../redux/features/Chat/chatSlice';
-import { AppDispatch, RootState } from '../../redux/store';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import AppHeader from '../../components/atoms/AppHeader/AppHeader';
-import { DrawerActions, useNavigation } from '@react-navigation/native';
+  StatusBar,
+} from "react-native";
+import React, { useEffect } from "react";
+import AppText from "../../components/atoms/AppText/AppText";
+import { AppColors, AppFontFamily } from "../../themes";
+import ThemeInput from "../../components/atoms/ThemeInput/ThemeInput";
+import { CircleArrowUp, Copy, NotebookPen, Share2 } from "lucide-react-native";
+
+import { SafeAreaView } from "react-native-safe-area-context";
+import AppHeader from "../../components/atoms/AppHeader/AppHeader";
+import { DrawerActions, useNavigation } from "@react-navigation/native";
+import { useChat } from "../../hooks/useChat";
 
 const Chat = (props: any) => {
-  const [userMessage, setUserMessage] = useState('');
-  const flatListRef = useRef<FlatList>(null);
   const id = props?.route?.params?.id;
-  const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation();
-  const sessions = useSelector((state: RootState) => state.chat.sessions);
-  const currentSessionId = useSelector(
-    (state: RootState) => state.chat.currentSessionId,
-  );
-  const currentSession = sessions.find(
-    session => session.sessionId === currentSessionId,
-  );
 
+  const {
+    userMessage,
+    setUserMessage,
+    initializeSession,
+    sendMessage,
+    createNewChat,
+    currentSession,
+    flatListRef,
+    handleCopy,
+    handleShare,
+  } = useChat(id);
 
   useEffect(() => {
-    if (id) {
-      dispatch(setCurrentSession(id)); // ✅ set correct session
-    }
+    initializeSession();
   }, [id]);
-
-  useEffect(() => {
-    if (!currentSession) {
-      dispatch(startNewChat({ sessionName: 'New Chat' }));
-    }
-  }, []);
-
-  const handleOpenApi = async () => {
-    if (!userMessage.trim()) return;
-
-    const newUserMessage = { role: 'user', content: userMessage };
-    dispatch(addMessage(newUserMessage));
-    setUserMessage('');
-
-    try {
-      const messages = [
-        { role: 'system', content: 'You are a helpful assistant.' },
-        ...(currentSession?.messages || []),
-        newUserMessage,
-      ];
-
-      const response = await axios.post(
-        'https://our-cafe-backend.onrender.com/api/v1/OpenAi/chat',
-        { messages },
-        { headers: { 'Content-Type': 'application/json' } },
-      );
-
-      const aiReply =
-        response?.data?.data?.choices?.[0]?.message?.content || 'No response';
-      dispatch(addMessage({ role: 'assistant', content: aiReply }));
-
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    } catch (error: any) {
-      console.log('Something went wrong on Open Ai.', error.message);
-    }
-  };
 
   const renderMessage = ({
     item,
   }: {
     item: { role: string; content: string };
   }) => {
-    const isUser = item.role === 'user';
+    const isUser = item.role === "user";
     return (
-      <View
-        style={[
-          styles.messageBubble,
-          isUser ? styles.userBubble : styles.aiBubble,
-        ]}
-      >
-        <AppText
-          text={item.content}
-          style={{
-            color: isUser ? AppColors.white : AppColors.black,
-            fontFamily: AppFontFamily.Medium,
-            padding: 10,
-            borderRadius: 20,
-          }}
-        />
+      <View>
+        <View
+          style={[
+            styles.messageBubble,
+            isUser ? styles.userBubble : styles.aiBubble,
+          ]}
+        >
+          <AppText
+            text={item.content}
+            style={{
+              color: isUser ? AppColors.white : AppColors.black,
+              fontFamily: AppFontFamily.Medium,
+              padding: 10,
+              borderRadius: 20,
+              alignSelf: "flex-start",
+            }}
+          />
+        </View>
+        {!isUser && (
+          <View style={styles.copyContainer}>
+            <TouchableOpacity
+              onPress={() => {
+                handleCopy(item.content);
+              }}
+            >
+              <Copy color={AppColors.grayColor} size={18} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                handleShare(item.content);
+              }}
+            >
+              <Share2 color={AppColors.grayColor} size={18} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-    );
-  };
-
-  const handleNewChat = () => {
-    dispatch(
-      startNewChat({
-        sessionName:
-          userMessage && userMessage.trim().length > 0
-            ? userMessage.slice(0, 20)
-            : 'New Chat',
-      }),
     );
   };
 
@@ -125,11 +91,12 @@ const Chat = (props: any) => {
         flex: 1,
       }}
     >
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" />
       <AppHeader
         isMenuIcon
         tittle="ChatGpt"
         onRightIcon={
-          <TouchableOpacity onPress={handleNewChat}>
+          <TouchableOpacity onPress={createNewChat}>
             <NotebookPen />
           </TouchableOpacity>
         }
@@ -137,7 +104,7 @@ const Chat = (props: any) => {
       />
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "android" ? "padding" : "height"}
       >
         <View style={styles.headingContainer}>
           {currentSession?.messages.length ? (
@@ -153,7 +120,7 @@ const Chat = (props: any) => {
             />
           ) : (
             <AppText
-              text={'What can I help with?'}
+              text={"What can I help with?"}
               style={styles.HeadingText}
             />
           )}
@@ -163,12 +130,13 @@ const Chat = (props: any) => {
           <ThemeInput
             placeholder="Ask anything..."
             style={styles.input}
+            inputContainerStyle={styles.inputContainersty}
             value={userMessage}
-            placeholderColors={AppColors.black}
+            placeholderColors={AppColors.white}
             onChangeText={setUserMessage}
             isEndIcon={
-              <TouchableOpacity onPress={handleOpenApi}>
-                {userMessage && <CircleArrowUp />}
+              <TouchableOpacity onPress={sendMessage}>
+                {userMessage && <CircleArrowUp color={AppColors.white} />}
               </TouchableOpacity>
             }
           />
@@ -184,18 +152,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: AppColors.white },
   messageList: { padding: 12 },
   messageBubble: {
-    maxWidth: '75%',
+    maxWidth: "75%",
     padding: 5,
     marginVertical: 6,
     borderRadius: 12,
   },
   userBubble: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     borderBottomRightRadius: 0,
     backgroundColor: AppColors.lightBlack,
   },
   aiBubble: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     borderBottomLeftRadius: 0,
     backgroundColor: AppColors.ExtralightGray,
   },
@@ -204,16 +172,27 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: AppColors.grayColor,
   },
-  input: { height: 45 },
-  headingContainer: { flex: 1, justifyContent: 'center' },
+  input: { height: 45, color: AppColors.white },
+  headingContainer: { flex: 1, justifyContent: "center" },
   HeadingText: {
     color: AppColors.black,
     fontSize: 20,
     fontFamily: AppFontFamily.Bold,
-    textAlign: 'center',
+    textAlign: "center",
   },
   newChatBtn: {
     padding: 12,
-    alignItems: 'center',
+    alignItems: "center",
+  },
+
+  copyContainer: {
+    flexDirection: "row",
+    gap: 10,
+    marginLeft: 5,
+    marginTop: 5,
+  },
+  inputContainersty: {
+    borderRadius: 20,
+    backgroundColor: AppColors.lightBlack,
   },
 });

@@ -4,37 +4,43 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import React from 'react';
-import SearchBar from '../../../components/atoms/SearchBar/SearchBar';
-import { Navigation, NotebookPen } from 'lucide-react-native';
-import { startNewChat } from '../../../redux/features/Chat/chatSlice';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppColors, AppFontFamily } from '../../../themes';
-import { SessionSelector } from '../../../redux/features/Chat/chatSelecor';
-import AppText from '../../../components/atoms/AppText/AppText';
-import { useAppNavigation } from '../../../utils/navigationHelper';
-import { DrawerActions, useNavigation } from '@react-navigation/native';
+} from "react-native";
+import React, { useState } from "react";
+import SearchBar from "../../../components/atoms/SearchBar/SearchBar";
+import { Navigation, NotebookPen } from "lucide-react-native";
+import { startNewChat } from "../../../redux/features/Chat/chatSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { AppColors, AppFontFamily } from "../../../themes";
+import { SessionSelector } from "../../../redux/features/Chat/chatSelecor";
+import AppText from "../../../components/atoms/AppText/AppText";
+import { useAppNavigation } from "../../../utils/navigationHelper";
+import { DrawerActions, useNavigation } from "@react-navigation/native";
+import DividerLine from "../../../components/atoms/DividerLine/DividerLine";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const CustomSideMenu = () => {
   const sessions = useSelector(SessionSelector);
+  const [selectedId, setSelectedId] = useState(null > null);
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const { navigateTo } = useAppNavigation();
   const handleNewChat = () => {
-    dispatch(startNewChat({ sessionName: 'New Chat' }));
+    dispatch(startNewChat({ sessionName: "New Chat" }));
     navigation.dispatch(DrawerActions.closeDrawer());
   };
 
   const renderSession = ({ item }) => {
+    const isSelected = selectedId === item?.sessionId;
     return (
       <TouchableOpacity
         onPress={() => {
-          navigateTo('Chat', { id: item?.sessionId });
+          setSelectedId(item?.sessionId);
+          navigateTo("Chat", { id: item?.sessionId });
         }}
+        style={[styles.sessionItem, isSelected && styles.selectedSession]}
       >
         <AppText
-          text={item?.messages[0]?.content.slice(0, 30) || 'New chat'}
+          text={item?.messages[0]?.content.slice(0, 30) || "New chat"}
           style={styles.contentName}
         />
       </TouchableOpacity>
@@ -42,7 +48,7 @@ const CustomSideMenu = () => {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.searchContainer}>
         <SearchBar style={styles.searchBar} />
         <TouchableOpacity style={styles.noteIcon} onPress={handleNewChat}>
@@ -50,12 +56,14 @@ const CustomSideMenu = () => {
         </TouchableOpacity>
       </View>
 
+      <DividerLine thickness={0.5} />
+
       <FlatList
         data={sessions}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderSession}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -64,18 +72,23 @@ export default CustomSideMenu;
 const styles = StyleSheet.create({
   searchContainer: {
     marginVertical: 10,
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   searchBar: {
-    width: 250,
+    width: 235,
     marginHorizontal: 10,
   },
-  noteIcon: { alignSelf: 'center' },
+  noteIcon: { alignSelf: "center", marginLeft: 5 },
   contentName: {
     color: AppColors.black,
     marginHorizontal: 10,
-    marginVertical: 5,
-    fontSize: 20,
-    fontFamily: AppFontFamily.Medium,
+    fontSize: 15,
+    fontFamily: AppFontFamily.Regular,
+  },
+  sessionItem: {
+    padding: 5,
+  },
+  selectedSession: {
+    backgroundColor: AppColors.ExtralightGray,
   },
 });
