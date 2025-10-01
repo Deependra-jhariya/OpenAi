@@ -21,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const CustomSideMenu = () => {
   const sessions = useSelector(SessionSelector);
   const [selectedId, setSelectedId] = useState(null > null);
+  const [searchQuery, setSearchQuery] = useState("");
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const { navigateTo } = useAppNavigation();
@@ -28,6 +29,15 @@ const CustomSideMenu = () => {
     dispatch(startNewChat({ sessionName: "New Chat" }));
     navigation.dispatch(DrawerActions.closeDrawer());
   };
+
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+  };
+  const filteredSessions = sessions.filter((session) =>
+    session?.messages[0]?.content
+      ?.toLowerCase()
+      .includes(searchQuery.toLowerCase())
+  );
 
   const renderSession = ({ item }) => {
     const isSelected = selectedId === item?.sessionId;
@@ -50,7 +60,12 @@ const CustomSideMenu = () => {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.searchContainer}>
-        <SearchBar style={styles.searchBar} />
+        <SearchBar
+          style={styles.searchBar}
+          placeholder="Search chats..."
+          value={searchQuery}
+          onChangeText={handleSearch}
+        />
         <TouchableOpacity style={styles.noteIcon} onPress={handleNewChat}>
           <NotebookPen color={AppColors.black} />
         </TouchableOpacity>
@@ -59,7 +74,7 @@ const CustomSideMenu = () => {
       <DividerLine thickness={0.5} />
 
       <FlatList
-        data={sessions}
+        data={filteredSessions}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderSession}
       />

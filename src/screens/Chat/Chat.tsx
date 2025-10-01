@@ -94,7 +94,7 @@ const Chat = (props: any) => {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" />
       <AppHeader
         isMenuIcon
-        tittle="ChatGpt"
+        tittle="OpenAI"
         onRightIcon={
           <TouchableOpacity onPress={createNewChat}>
             <NotebookPen />

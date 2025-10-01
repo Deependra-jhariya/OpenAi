@@ -82,6 +82,8 @@ export const HeaderStyle = StyleSheet.create({
     height: 60,
     backgroundColor: AppColors?.white,
     paddingHorizontal: 16,
+    borderBottomWidth:1,
+    borderBottomColor:AppColors.lightBlack
   },
   headerView: {
     flex: 1,
